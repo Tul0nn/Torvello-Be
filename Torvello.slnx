@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Torvello.Api/Torvello.Api.csproj" />
+    <Project Path="src/Torvello.Application/Torvello.Application.csproj" />
+    <Project Path="src/Torvello.Domain/Torvello.Domain.csproj" />
+    <Project Path="src/Torvello.Infrastructure/Torvello.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Torvello.Tests/Torvello.Tests.csproj" />
+  </Folder>
+</Solution>
