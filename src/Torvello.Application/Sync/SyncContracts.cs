@@ -39,10 +39,17 @@ public interface IDeviceService
 
 public sealed record DevicePingDto(Guid DeviceId, string Name);
 
+/// <summary>A website edit for tills to apply. Types: "customer", "staff".</summary>
+public sealed record ServerChangeDto(long Sequence, string EntityType, JsonElement Payload);
+
+/// <summary>Cursor is the last sequence in this page; ask again with it while HasMore is true.</summary>
+public sealed record ServerChangesDto(IReadOnlyList<ServerChangeDto> Changes, long Cursor, bool HasMore);
+
 public interface ISyncService
 {
     Task<SyncPushResult> PushAsync(Guid deviceId, SyncPushRequest request, CancellationToken ct);
     Task<DevicePingDto> PingAsync(Guid deviceId, CancellationToken ct);
+    Task<ServerChangesDto> ChangesAsync(long after, CancellationToken ct);
 }
 
 public interface IReportService

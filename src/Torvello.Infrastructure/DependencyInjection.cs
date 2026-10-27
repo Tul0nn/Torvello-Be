@@ -66,6 +66,10 @@ public static class DependencyInjection
         services.AddScoped<IInventoryService, InventoryService>();
         services.AddScoped<IPolicyService, Hr.PolicyService>();
         services.AddScoped<IAttendanceService, Hr.AttendanceService>();
+        services.AddScoped<ChangeFeed>();
+        services.AddScoped<Application.People.ICustomerService, People.CustomerService>();
+        services.AddScoped<Application.People.IEmployeeService, People.EmployeeService>();
+        services.AddScoped<Application.People.IBillService, People.BillService>();
 
         if (string.Equals(configuration["Email:Provider"], "Smtp", StringComparison.OrdinalIgnoreCase))
         {

@@ -17,6 +17,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Policy> Policies => Set<Policy>();
     public DbSet<PolicyAcknowledgement> PolicyAcknowledgements => Set<PolicyAcknowledgement>();
     public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
+    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<StaffRecord> StaffRecords => Set<StaffRecord>();
+    public DbSet<ServerChange> ServerChanges => Set<ServerChange>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -141,6 +144,50 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             attendance.Property(a => a.ClosedBy).HasMaxLength(60);
             attendance.HasIndex(a => a.BusinessDate);
             attendance.HasIndex(a => a.EmployeeEmail);
+        });
+
+        builder.Entity<Customer>(customer =>
+        {
+            customer.ToTable("Customers");
+            customer.HasKey(c => c.Id);
+            customer.Property(c => c.Phone).HasMaxLength(20).IsRequired();
+            customer.HasIndex(c => c.Phone).IsUnique();
+            customer.Property(c => c.Name).HasMaxLength(60);
+            customer.Property(c => c.Notes).HasMaxLength(1000);
+            customer.Property(c => c.UpdatedByName).HasMaxLength(60);
+        });
+
+        builder.Entity<ServerChange>(change =>
+        {
+            change.ToTable("ServerChanges");
+            change.HasKey(c => c.Sequence);
+            change.Property(c => c.Sequence).ValueGeneratedOnAdd();
+            change.Property(c => c.EntityType).HasMaxLength(20).IsRequired();
+            change.Property(c => c.ProtectedPayload).IsRequired();
+        });
+
+        builder.Entity<SyncedOrder>(order =>
+        {
+            order.HasIndex(o => o.CustomerId);
+            order.HasOne<Customer>().WithMany().HasForeignKey(o => o.CustomerId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<StaffRecord>(profile =>
+        {
+            profile.ToTable("StaffRecords");
+            profile.HasKey(p => p.Id);
+            profile.Property(p => p.Name).HasMaxLength(60).IsRequired();
+            profile.Property(p => p.Email).HasMaxLength(254).IsRequired();
+            profile.HasIndex(p => p.Email);
+            profile.Property(p => p.Role).HasMaxLength(20).IsRequired();
+            profile.Property(p => p.UpdatedByName).HasMaxLength(60);
+            profile.Property(p => p.Position).HasMaxLength(60);
+            profile.Property(p => p.Phone).HasMaxLength(20);
+            profile.Property(p => p.Address).HasMaxLength(300);
+            profile.Property(p => p.NationalIdProtected).HasMaxLength(500);
+            profile.Property(p => p.EmergencyContactName).HasMaxLength(60);
+            profile.Property(p => p.EmergencyContactPhone).HasMaxLength(20);
+            profile.Property(p => p.Notes).HasMaxLength(1000);
         });
     }
 }

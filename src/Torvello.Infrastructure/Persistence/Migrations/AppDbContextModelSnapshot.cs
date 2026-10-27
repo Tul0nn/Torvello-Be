@@ -309,6 +309,61 @@ namespace Torvello.Infrastructure.Persistence.Migrations
                     b.ToTable("AuditEvents", (string)null);
                 });
 
+            modelBuilder.Entity("Torvello.Infrastructure.Persistence.Customer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("AnniversaryDay")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("AnniversaryMonth")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("BirthdayDay")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("BirthdayMonth")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("MarketingConsent")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid?>("TillCustomerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedByName")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Phone")
+                        .IsUnique();
+
+                    b.ToTable("Customers", (string)null);
+                });
+
             modelBuilder.Entity("Torvello.Infrastructure.Persistence.Device", b =>
                 {
                     b.Property<Guid>("Id")
@@ -536,6 +591,109 @@ namespace Torvello.Infrastructure.Persistence.Migrations
                     b.ToTable("RefreshTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Torvello.Infrastructure.Persistence.ServerChange", b =>
+                {
+                    b.Property<long>("Sequence")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Sequence"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("ProtectedPayload")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Sequence");
+
+                    b.ToTable("ServerChanges", (string)null);
+                });
+
+            modelBuilder.Entity("Torvello.Infrastructure.Persistence.StaffRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<DateOnly?>("DateOfBirth")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("DeviceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)");
+
+                    b.Property<string>("EmergencyContactName")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("EmergencyContactPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateOnly?>("JoinDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("NationalIdProtected")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Position")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedByName")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email");
+
+                    b.ToTable("StaffRecords", (string)null);
+                });
+
             modelBuilder.Entity("Torvello.Infrastructure.Persistence.SyncEvent", b =>
                 {
                     b.Property<Guid>("EventId")
@@ -584,6 +742,12 @@ namespace Torvello.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("CompletedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<long>("CompletedAtMs")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid?>("CustomerId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("DeviceId")
                         .HasColumnType("uuid");
 
@@ -616,6 +780,8 @@ namespace Torvello.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BusinessDate");
+
+                    b.HasIndex("CustomerId");
 
                     b.HasIndex("DeviceId", "ReceiptNumber")
                         .IsUnique();
@@ -765,6 +931,11 @@ namespace Torvello.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Torvello.Infrastructure.Persistence.SyncedOrder", b =>
                 {
+                    b.HasOne("Torvello.Infrastructure.Persistence.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Torvello.Infrastructure.Persistence.Device", null)
                         .WithMany()
                         .HasForeignKey("DeviceId")

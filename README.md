@@ -84,6 +84,19 @@ Security rules:
 | `POST /api/hr/policies/{id}/acknowledge` | everyone | confirm the current version |
 | `GET /api/hr/attendance?from=&to=` | Owner, Manager | clock-ins and hours per person (max 62 days) |
 
+| `GET /api/customers`, `GET /api/customers/{id}` | Owner, Manager | customers with visits and spend; managers see masked phones |
+| `PUT /api/customers/{id}` | Owner | edit details; queued for tills |
+| `GET /api/employees`, `GET /api/employees/{id}` | Owner, Manager | staff from the till; personal details and national ID for the owner only |
+| `GET /api/employees/me` | everyone | your own staff record, by email |
+| `PUT /api/employees/{id}` | Owner | edit HR details; queued for tills |
+| `GET /api/orders?date=`, `GET /api/orders/{id}` | Owner, Manager | bills with lines, payments and customer |
+| `GET /api/sync/changes?after=` | till | owner edits for tills to apply (cursor based) |
+
+Customers and staff details are entered at the till (`customer_saved`, `employee_saved` events)
+and may also be edited by the owner on the website (stored in `ServerChanges`, encrypted, and
+downloaded by tills). Every record keeps `UpdatedAt` / `UpdatedByName`; the newest edit wins.
+National IDs are encrypted with ASP.NET Data Protection.
+
 Changing a policy's title or text raises its version, so staff are asked to confirm again.
 Attendance comes from `attendance_clock_in` / `attendance_clock_out` till events.
 
