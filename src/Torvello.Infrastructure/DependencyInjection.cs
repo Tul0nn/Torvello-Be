@@ -10,6 +10,8 @@ using Torvello.Infrastructure.Auth;
 using Torvello.Infrastructure.Email;
 using Torvello.Infrastructure.Persistence;
 using Torvello.Infrastructure.Staff;
+using Torvello.Infrastructure.Sync;
+using Torvello.Application.Sync;
 
 namespace Torvello.Infrastructure;
 
@@ -56,6 +58,9 @@ public static class DependencyInjection
         services.AddScoped<AuditLog>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IStaffService, StaffService>();
+        services.AddScoped<IDeviceService, DeviceService>();
+        services.AddScoped<ISyncService, SyncService>();
+        services.AddScoped<IReportService, ReportService>();
 
         if (string.Equals(configuration["Email:Provider"], "Smtp", StringComparison.OrdinalIgnoreCase))
         {

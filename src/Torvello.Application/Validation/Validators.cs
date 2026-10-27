@@ -1,6 +1,7 @@
 using FluentValidation;
 using Torvello.Application.Auth;
 using Torvello.Application.Staff;
+using Torvello.Application.Sync;
 using Torvello.Domain;
 
 namespace Torvello.Application.Validation;
@@ -80,6 +81,27 @@ public sealed class InviteStaffRequestValidator : AbstractValidator<InviteStaffR
         RuleFor(x => x.Email).ValidEmail();
         RuleFor(x => x.DisplayName).NotEmpty().MaximumLength(60);
         RuleFor(x => x.Role).Must(Roles.IsValid).WithMessage($"Role must be one of: {string.Join(", ", Roles.All)}");
+    }
+}
+
+public sealed class CreateDeviceRequestValidator : AbstractValidator<CreateDeviceRequest>
+{
+    public CreateDeviceRequestValidator() => RuleFor(x => x.Name).NotEmpty().MaximumLength(60);
+}
+
+public sealed class SyncPushRequestValidator : AbstractValidator<SyncPushRequest>
+{
+    public const int MaxEvents = 200;
+
+    public SyncPushRequestValidator()
+    {
+        RuleFor(x => x.Events).NotNull().Must(e => e.Count is > 0 and <= MaxEvents)
+            .WithMessage($"Send between 1 and {MaxEvents} events");
+        RuleForEach(x => x.Events).ChildRules(e =>
+        {
+            e.RuleFor(x => x.EventId).NotEmpty();
+            e.RuleFor(x => x.EventType).NotEmpty().MaximumLength(60);
+        });
     }
 }
 

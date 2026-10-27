@@ -9,6 +9,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 {
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
+    public DbSet<Device> Devices => Set<Device>();
+    public DbSet<SyncEvent> SyncEvents => Set<SyncEvent>();
+    public DbSet<SyncedOrder> SyncedOrders => Set<SyncedOrder>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -40,6 +43,51 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             audit.Property(a => a.IpAddress).HasMaxLength(45);
             audit.HasIndex(a => a.OccurredAt);
             audit.HasIndex(a => a.UserId);
+        });
+
+        builder.Entity<Device>(device =>
+        {
+            device.ToTable("Devices");
+            device.HasKey(d => d.Id);
+            device.Property(d => d.Name).HasMaxLength(60).IsRequired();
+            device.Property(d => d.KeyHash).HasMaxLength(64).IsRequired();
+        });
+
+        builder.Entity<SyncEvent>(sync =>
+        {
+            sync.ToTable("SyncEvents");
+            sync.HasKey(e => e.EventId);
+            sync.Property(e => e.EventType).HasMaxLength(60).IsRequired();
+            sync.Property(e => e.Payload).IsRequired();
+            sync.Property(e => e.PayloadHash).HasMaxLength(64).IsRequired();
+            sync.HasIndex(e => new { e.DeviceId, e.ReceivedAt });
+            sync.HasOne<Device>().WithMany().HasForeignKey(e => e.DeviceId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<SyncedOrder>(order =>
+        {
+            order.ToTable("SyncedOrders");
+            order.HasKey(o => o.Id);
+            order.Property(o => o.ReceiptNumber).HasMaxLength(40).IsRequired();
+            order.Property(o => o.OrderType).HasMaxLength(20).IsRequired();
+            order.Property(o => o.EmployeeName).HasMaxLength(60);
+            order.HasIndex(o => o.BusinessDate);
+            order.HasIndex(o => new { o.DeviceId, o.ReceiptNumber }).IsUnique();
+            order.HasOne<Device>().WithMany().HasForeignKey(o => o.DeviceId).OnDelete(DeleteBehavior.Restrict);
+            order.HasMany(o => o.Lines).WithOne().HasForeignKey(l => l.OrderId).OnDelete(DeleteBehavior.Cascade);
+            order.HasMany(o => o.Payments).WithOne().HasForeignKey(p => p.OrderId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<SyncedOrderLine>(line =>
+        {
+            line.ToTable("SyncedOrderLines");
+            line.Property(l => l.Name).HasMaxLength(120).IsRequired();
+        });
+
+        builder.Entity<SyncedPayment>(payment =>
+        {
+            payment.ToTable("SyncedPayments");
+            payment.Property(p => p.Method).HasMaxLength(20).IsRequired();
         });
     }
 }

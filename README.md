@@ -67,6 +67,18 @@ Security rules:
 - The bootstrap owner must change the temporary password; until then only `/me` and `/change-password` work.
 - Refresh tokens and reset/invite tokens are never stored in plain text. Sign-ins, failures, invites and changes are written to `AuditEvents`.
 
+## Till sync
+| Endpoint | Who | Notes |
+|---|---|---|
+| `GET/POST /api/devices`, `DELETE /api/devices/{id}` | Owner | register a till (the key `{deviceId}.{secret}` is shown once, stored hashed), list, revoke |
+| `GET /api/sync/ping` | till (`X-Device-Key`) | checks the key, returns the till name |
+| `POST /api/sync/events` | till (`X-Device-Key`) | up to 200 outbox events; idempotent by event id; each event accepted or rejected with a reason |
+| `GET /api/reports/daily?date=YYYY-MM-DD` | Owner, Manager | orders, sales, discounts, payment methods, top items for a Dhaka business day |
+
+Every uploaded event is stored raw in `SyncEvents`; `order_completed` is also projected into
+`SyncedOrders` after re-checking that lines, discount, total and payments add up. Other event
+types (shifts, cash movements, later stock and attendance) are kept for future reports.
+
 Before production: set `Email:Provider=Smtp` with SMTP settings, set `AppLinks:WebBaseUrl`
 to the web app URL, set `Cors:AllowedOrigins`, and persist ASP.NET Data Protection keys
 (invite/reset links otherwise stop working after a restart).
