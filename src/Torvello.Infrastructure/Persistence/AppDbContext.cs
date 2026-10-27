@@ -12,6 +12,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Device> Devices => Set<Device>();
     public DbSet<SyncEvent> SyncEvents => Set<SyncEvent>();
     public DbSet<SyncedOrder> SyncedOrders => Set<SyncedOrder>();
+    public DbSet<InventoryIngredient> InventoryIngredients => Set<InventoryIngredient>();
+    public DbSet<InventoryMovement> InventoryMovements => Set<InventoryMovement>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -88,6 +90,26 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         {
             payment.ToTable("SyncedPayments");
             payment.Property(p => p.Method).HasMaxLength(20).IsRequired();
+        });
+
+        builder.Entity<InventoryIngredient>(ingredient =>
+        {
+            ingredient.ToTable("InventoryIngredients");
+            ingredient.HasKey(i => i.Id);
+            ingredient.Property(i => i.Name).HasMaxLength(60).IsRequired();
+            ingredient.Property(i => i.Unit).HasMaxLength(8).IsRequired();
+        });
+
+        builder.Entity<InventoryMovement>(movement =>
+        {
+            movement.ToTable("InventoryMovements");
+            movement.HasKey(m => m.Id);
+            movement.Property(m => m.Type).HasMaxLength(20).IsRequired();
+            movement.Property(m => m.Note).HasMaxLength(200);
+            movement.Property(m => m.EmployeeName).HasMaxLength(60);
+            movement.HasIndex(m => new { m.IngredientId, m.OccurredAtMs });
+            // A sale deducts each ingredient once, however often the event is uploaded.
+            movement.HasIndex(m => new { m.SourceEventId, m.IngredientId }).IsUnique();
         });
     }
 }

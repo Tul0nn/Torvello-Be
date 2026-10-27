@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Torvello.Api.Infrastructure;
+using Torvello.Application.Inventory;
 using Torvello.Application.Sync;
 using Torvello.Domain;
 
@@ -43,6 +44,19 @@ public sealed class SyncController(ISyncService sync) : ControllerBase
     /// <summary>Lets a till check its key and show which registered till it is.</summary>
     [HttpGet("ping")]
     public Task<DevicePingDto> Ping(CancellationToken ct) => sync.PingAsync(User.DeviceId(), ct);
+}
+
+/// <summary>Stock as recorded on the tills. Read-only: stock changes happen at the till.</summary>
+[ApiController]
+[Route("api/inventory")]
+[Authorize(Roles = $"{Roles.Owner},{Roles.Manager}")]
+public sealed class InventoryController(IInventoryService inventory) : ControllerBase
+{
+    [HttpGet]
+    public Task<IReadOnlyList<InventoryItemDto>> List(CancellationToken ct) => inventory.ListAsync(ct);
+
+    [HttpGet("{id:guid}/movements")]
+    public Task<IReadOnlyList<StockMovementDto>> Movements(Guid id, CancellationToken ct) => inventory.MovementsAsync(id, ct);
 }
 
 [ApiController]

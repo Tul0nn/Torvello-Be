@@ -38,11 +38,21 @@ public sealed class SyncService(AppDbContext db, TimeProvider clock) : ISyncServ
                     OccurredAt = evt.CreatedAt,
                     ReceivedAt = clock.GetUtcNow(),
                 });
-                // Other event types (shifts, cash movements, later stock and attendance) are kept
-                // as raw events until their reports exist; they can be projected from history then.
-                if (evt.EventType == "order_completed")
+                // Other event types (shifts, cash movements, recipes, later attendance) are kept as
+                // raw events until their reports exist; they can be projected from history then.
+                switch (evt.EventType)
                 {
-                    db.SyncedOrders.Add(OrderProjection.Parse(evt.Payload, deviceId, evt.EventId, evt.CreatedAt));
+                    case "order_completed":
+                        var order = OrderProjection.Parse(evt.Payload, deviceId, evt.EventId, evt.CreatedAt);
+                        db.SyncedOrders.Add(order);
+                        await InventoryProjection.SaleUsageAsync(db, evt.Payload, order, ct);
+                        break;
+                    case "ingredient_saved":
+                        await InventoryProjection.IngredientSavedAsync(db, evt.Payload, deviceId, evt.CreatedAt, ct);
+                        break;
+                    case "stock_movement":
+                        await InventoryProjection.StockMovementAsync(db, evt.Payload, deviceId, evt.EventId, evt.CreatedAt, ct);
+                        break;
                 }
                 await db.SaveChangesAsync(ct);
                 accepted.Add(evt.EventId);

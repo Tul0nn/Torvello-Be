@@ -75,6 +75,13 @@ Security rules:
 | `POST /api/sync/events` | till (`X-Device-Key`) | up to 200 outbox events; idempotent by event id; each event accepted or rejected with a reason |
 | `GET /api/reports/daily?date=YYYY-MM-DD` | Owner, Manager | orders, sales, discounts, payment methods, top items for a Dhaka business day |
 
+| `GET /api/inventory` | Owner, Manager | stock per ingredient (thousandths of g / ml / pcs), low-stock flag |
+| `GET /api/inventory/{id}/movements` | Owner, Manager | latest 100 stock changes for one ingredient |
+
+Inventory events from the till: `ingredient_saved` (upserts `InventoryIngredients`),
+`stock_movement` (deliveries, wastage, counts) and the `stockUsage` list inside
+`order_completed` (one negative `sale` movement per ingredient, unique per event).
+
 Every uploaded event is stored raw in `SyncEvents`; `order_completed` is also projected into
 `SyncedOrders` after re-checking that lines, discount, total and payments add up. Other event
 types (shifts, cash movements, later stock and attendance) are kept for future reports.
