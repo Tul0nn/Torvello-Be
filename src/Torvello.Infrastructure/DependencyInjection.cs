@@ -13,6 +13,7 @@ using Torvello.Infrastructure.Staff;
 using Torvello.Infrastructure.Sync;
 using Torvello.Application.Sync;
 using Torvello.Application.Inventory;
+using Torvello.Application.Hr;
 
 namespace Torvello.Infrastructure;
 
@@ -63,6 +64,8 @@ public static class DependencyInjection
         services.AddScoped<ISyncService, SyncService>();
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<IInventoryService, InventoryService>();
+        services.AddScoped<IPolicyService, Hr.PolicyService>();
+        services.AddScoped<IAttendanceService, Hr.AttendanceService>();
 
         if (string.Equals(configuration["Email:Provider"], "Smtp", StringComparison.OrdinalIgnoreCase))
         {
