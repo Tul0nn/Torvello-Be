@@ -78,6 +78,15 @@ Security rules:
 | `GET /api/inventory` | Owner, Manager | stock per ingredient (thousandths of g / ml / pcs), low-stock flag |
 | `GET /api/inventory/{id}/movements` | Owner, Manager | latest 100 stock changes for one ingredient |
 
+| `GET /api/hr/policies`, `GET /api/hr/policies/{id}` | everyone | published policies (Owner/Manager also see drafts), with your confirmation |
+| `POST/PUT /api/hr/policies`, `GET .../{id}/acknowledgements` | Owner, Manager | write policies; who confirmed which version |
+| `DELETE /api/hr/policies/{id}` | Owner | soft delete |
+| `POST /api/hr/policies/{id}/acknowledge` | everyone | confirm the current version |
+| `GET /api/hr/attendance?from=&to=` | Owner, Manager | clock-ins and hours per person (max 62 days) |
+
+Changing a policy's title or text raises its version, so staff are asked to confirm again.
+Attendance comes from `attendance_clock_in` / `attendance_clock_out` till events.
+
 Inventory events from the till: `ingredient_saved` (upserts `InventoryIngredients`),
 `stock_movement` (deliveries, wastage, counts) and the `stockUsage` list inside
 `order_completed` (one negative `sale` movement per ingredient, unique per event).

@@ -71,6 +71,17 @@ public sealed class TestApp : WebApplicationFactory<Program>
         return (client, session);
     }
 
+    /// <summary>Invites a staff member, accepts the invite, signs them in and returns their client.</summary>
+    public async Task<HttpClient> StaffAsync(HttpClient owner, string email, string role, string password = "Mocha7788x")
+    {
+        var invite = await owner.PostAsJsonAsync("/api/staff", new Application.Staff.InviteStaffRequest(email, email.Split('@')[0], role));
+        invite.EnsureSuccessStatusCode();
+        var client = CreateClient();
+        var accepted = await client.PostAsJsonAsync("/api/auth/accept-invite", new AcceptInviteRequest(email, Mail.LatestTokenFor(email), password));
+        accepted.EnsureSuccessStatusCode();
+        return ClientWith((await LoginAsync(client, email, password)).AccessToken);
+    }
+
     public HttpClient ClientWith(string accessToken)
     {
         var client = CreateClient();

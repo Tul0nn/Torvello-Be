@@ -105,6 +105,16 @@ public sealed class SyncPushRequestValidator : AbstractValidator<SyncPushRequest
     }
 }
 
+public sealed class PolicyInputValidator : AbstractValidator<Hr.PolicyInput>
+{
+    public PolicyInputValidator()
+    {
+        RuleFor(x => x.Title).Must(t => !string.IsNullOrWhiteSpace(t)).WithMessage("Title is required").MaximumLength(120);
+        RuleFor(x => x.Category).Must(c => !string.IsNullOrWhiteSpace(c)).WithMessage("Category is required").MaximumLength(40);
+        RuleFor(x => x.Body).Must(b => !string.IsNullOrWhiteSpace(b)).WithMessage("Policy text is required").MaximumLength(50_000);
+    }
+}
+
 public sealed class UpdateStaffRequestValidator : AbstractValidator<UpdateStaffRequest>
 {
     public UpdateStaffRequestValidator()

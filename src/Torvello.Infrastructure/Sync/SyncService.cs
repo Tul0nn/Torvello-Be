@@ -53,6 +53,12 @@ public sealed class SyncService(AppDbContext db, TimeProvider clock) : ISyncServ
                     case "stock_movement":
                         await InventoryProjection.StockMovementAsync(db, evt.Payload, deviceId, evt.EventId, evt.CreatedAt, ct);
                         break;
+                    case "attendance_clock_in":
+                        Hr.AttendanceProjection.ClockIn(db, evt.Payload, deviceId);
+                        break;
+                    case "attendance_clock_out":
+                        await Hr.AttendanceProjection.ClockOutAsync(db, evt.Payload, deviceId, ct);
+                        break;
                 }
                 await db.SaveChangesAsync(ct);
                 accepted.Add(evt.EventId);

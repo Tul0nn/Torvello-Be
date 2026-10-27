@@ -14,6 +14,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<SyncedOrder> SyncedOrders => Set<SyncedOrder>();
     public DbSet<InventoryIngredient> InventoryIngredients => Set<InventoryIngredient>();
     public DbSet<InventoryMovement> InventoryMovements => Set<InventoryMovement>();
+    public DbSet<Policy> Policies => Set<Policy>();
+    public DbSet<PolicyAcknowledgement> PolicyAcknowledgements => Set<PolicyAcknowledgement>();
+    public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -110,6 +113,34 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             movement.HasIndex(m => new { m.IngredientId, m.OccurredAtMs });
             // A sale deducts each ingredient once, however often the event is uploaded.
             movement.HasIndex(m => new { m.SourceEventId, m.IngredientId }).IsUnique();
+        });
+
+        builder.Entity<Policy>(policy =>
+        {
+            policy.ToTable("Policies");
+            policy.HasKey(p => p.Id);
+            policy.Property(p => p.Title).HasMaxLength(120).IsRequired();
+            policy.Property(p => p.Category).HasMaxLength(40).IsRequired();
+            policy.Property(p => p.Body).HasMaxLength(50_000).IsRequired();
+        });
+
+        builder.Entity<PolicyAcknowledgement>(ack =>
+        {
+            ack.ToTable("PolicyAcknowledgements");
+            ack.HasKey(a => new { a.PolicyId, a.UserId });
+            ack.HasOne<Policy>().WithMany().HasForeignKey(a => a.PolicyId).OnDelete(DeleteBehavior.Cascade);
+            ack.HasOne<AppUser>().WithMany().HasForeignKey(a => a.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<AttendanceRecord>(attendance =>
+        {
+            attendance.ToTable("AttendanceRecords");
+            attendance.HasKey(a => a.Id);
+            attendance.Property(a => a.EmployeeEmail).HasMaxLength(254).IsRequired();
+            attendance.Property(a => a.EmployeeName).HasMaxLength(60).IsRequired();
+            attendance.Property(a => a.ClosedBy).HasMaxLength(60);
+            attendance.HasIndex(a => a.BusinessDate);
+            attendance.HasIndex(a => a.EmployeeEmail);
         });
     }
 }
