@@ -5,8 +5,13 @@ using Torvello.Infrastructure.Persistence;
 
 namespace Torvello.Infrastructure.Sync;
 
-public sealed class SyncService(AppDbContext db, TimeProvider clock) : ISyncService
+public sealed class SyncService(AppDbContext db, Microsoft.AspNetCore.DataProtection.IDataProtectionProvider protection, ChangeFeed changes, TimeProvider clock)
+    : ISyncService
 {
+    private readonly Microsoft.AspNetCore.DataProtection.IDataProtector _nationalIds = People.NationalIds.Protector(protection);
+
+    public Task<ServerChangesDto> ChangesAsync(long after, CancellationToken ct) => changes.AfterAsync(after, ct);
+
     private const int MaxPayloadChars = 64 * 1024;
 
     public async Task<SyncPushResult> PushAsync(Guid deviceId, SyncPushRequest request, CancellationToken ct)
@@ -45,7 +50,14 @@ public sealed class SyncService(AppDbContext db, TimeProvider clock) : ISyncServ
                     case "order_completed":
                         var order = OrderProjection.Parse(evt.Payload, deviceId, evt.EventId, evt.CreatedAt);
                         db.SyncedOrders.Add(order);
+                        await People.CustomerProjection.LinkOrderAsync(db, evt.Payload, order, ct);
                         await InventoryProjection.SaleUsageAsync(db, evt.Payload, order, ct);
+                        break;
+                    case "customer_saved":
+                        await People.CustomerProjection.CustomerSavedAsync(db, evt.Payload, evt.CreatedAt, ct);
+                        break;
+                    case "employee_saved":
+                        await People.StaffProjection.EmployeeSavedAsync(db, _nationalIds, evt.Payload, deviceId, evt.CreatedAt, ct);
                         break;
                     case "ingredient_saved":
                         await InventoryProjection.IngredientSavedAsync(db, evt.Payload, deviceId, evt.CreatedAt, ct);

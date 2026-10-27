@@ -74,6 +74,7 @@ public static partial class OrderProjection
             DiscountPaisa = discount,
             TotalPaisa = total,
             CompletedAt = completedAt,
+            CompletedAtMs = completedAt.ToUnixTimeMilliseconds(),
             Lines = lines,
             Payments = payments,
         };

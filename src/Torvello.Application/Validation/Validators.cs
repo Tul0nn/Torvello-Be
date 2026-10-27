@@ -115,6 +115,33 @@ public sealed class PolicyInputValidator : AbstractValidator<Hr.PolicyInput>
     }
 }
 
+public sealed class CustomerUpdateValidator : AbstractValidator<People.CustomerUpdate>
+{
+    public CustomerUpdateValidator()
+    {
+        RuleFor(x => x.Name).MaximumLength(60);
+        RuleFor(x => x.Notes).MaximumLength(1000);
+        RuleFor(x => x).Must(x => CalendarDays.IsValid(x.BirthdayMonth, x.BirthdayDay)).WithMessage("Birthday is not a real date");
+        RuleFor(x => x).Must(x => CalendarDays.IsValid(x.AnniversaryMonth, x.AnniversaryDay)).WithMessage("Anniversary is not a real date");
+    }
+}
+
+public sealed class EmployeeProfileUpdateValidator : AbstractValidator<People.EmployeeProfileUpdate>
+{
+    public EmployeeProfileUpdateValidator()
+    {
+        RuleFor(x => x.Position).MaximumLength(60);
+        RuleFor(x => x.Address).MaximumLength(300);
+        RuleFor(x => x.EmergencyContactName).MaximumLength(60);
+        RuleFor(x => x.Notes).MaximumLength(1000);
+        // Bangladeshi NID numbers are 10, 13 or 17 digits.
+        RuleFor(x => x.NationalId)
+            .Must(id => string.IsNullOrWhiteSpace(id) || System.Text.RegularExpressions.Regex.IsMatch(id.Replace(" ", ""), @"^(\d{10}|\d{13}|\d{17})$"))
+            .WithMessage("National ID must be 10, 13 or 17 digits");
+        RuleFor(x => x.DateOfBirth).Must(d => d is null || d.Value.Year >= 1930).WithMessage("Date of birth looks wrong");
+    }
+}
+
 public sealed class UpdateStaffRequestValidator : AbstractValidator<UpdateStaffRequest>
 {
     public UpdateStaffRequestValidator()

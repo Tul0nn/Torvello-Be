@@ -41,6 +41,11 @@ public sealed class SyncedOrder
     public long DiscountPaisa { get; set; }
     public long TotalPaisa { get; set; }
     public DateTimeOffset CompletedAt { get; set; }
+
+    /// <summary>CompletedAt as Unix milliseconds, for ordering that works the same in every database.</summary>
+    public long CompletedAtMs { get; set; }
+
+    public Guid? CustomerId { get; set; }
     public List<SyncedOrderLine> Lines { get; set; } = [];
     public List<SyncedPayment> Payments { get; set; } = [];
 }

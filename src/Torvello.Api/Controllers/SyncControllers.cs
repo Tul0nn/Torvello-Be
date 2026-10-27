@@ -41,6 +41,10 @@ public sealed class SyncController(ISyncService sync) : ControllerBase
     [RequestSizeLimit(4 * 1024 * 1024)]
     public Task<SyncPushResult> Push(SyncPushRequest request, CancellationToken ct) => sync.PushAsync(User.DeviceId(), request, ct);
 
+    /// <summary>Website edits for the till to apply, after the till's last cursor.</summary>
+    [HttpGet("changes")]
+    public Task<ServerChangesDto> Changes([FromQuery] long after, CancellationToken ct) => sync.ChangesAsync(Math.Max(0, after), ct);
+
     /// <summary>Lets a till check its key and show which registered till it is.</summary>
     [HttpGet("ping")]
     public Task<DevicePingDto> Ping(CancellationToken ct) => sync.PingAsync(User.DeviceId(), ct);
