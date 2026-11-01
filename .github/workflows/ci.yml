@@ -1,0 +1,41 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet restore
+      - run: dotnet build --no-restore -warnaserror
+      - run: dotnet test --no-build
+      - name: Audit direct and transitive NuGet dependencies
+        shell: bash
+        run: |
+          dotnet list package --vulnerable --include-transitive --format json > vulnerabilities.json
+          cat vulnerabilities.json
+          python3 - <<'PY'
+          import json
+          import sys
+          with open("vulnerabilities.json") as report:
+              data = json.load(report)
+          found = [
+              package
+              for project in data.get("projects", [])
+              for framework in project.get("frameworks", [])
+              for group in ("topLevelPackages", "transitivePackages")
+              for package in framework.get(group, [])
+              if package.get("vulnerabilities")
+          ]
+          if found:
+              print("Vulnerable packages found:", ", ".join(p["id"] for p in found))
+              sys.exit(1)
+          PY

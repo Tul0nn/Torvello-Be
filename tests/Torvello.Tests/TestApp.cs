@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -23,11 +24,13 @@ public sealed class TestApp : WebApplicationFactory<Program>
     private readonly SqliteConnection _connection = new("DataSource=:memory:");
     public CapturingEmailSender Mail { get; } = new();
 
+    public bool RequireTwoFactor { get; init; }
     public TestApp() => _connection.Open();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        builder.UseSetting("Security:RequireTwoFactorForManagers", RequireTwoFactor.ToString());
         builder.UseSetting("Database:Initialize", "EnsureCreated");
         builder.UseSetting("Jwt:SigningKey", "test-signing-key-that-is-long-enough-1234567890");
         builder.UseSetting("Bootstrap:OwnerEmail", OwnerEmail);
@@ -37,6 +40,7 @@ public sealed class TestApp : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
+            services.AddDataProtection().UseEphemeralDataProtectionProvider();
             services.RemoveAll<DbContextOptions<AppDbContext>>();
             services.RemoveAll<AppDbContext>();
             services.AddDbContext<AppDbContext>(options => options.UseSqlite(_connection));

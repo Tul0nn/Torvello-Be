@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -16,13 +17,14 @@ public sealed class StaffService(
     AuditLog audit,
     IEmailSender email,
     IOptions<AppLinkOptions> links,
-    TimeProvider clock) : IStaffService
+    TimeProvider clock,
+    IConfiguration configuration) : IStaffService
 {
     public async Task<IReadOnlyList<UserDto>> ListAsync(CancellationToken ct)
     {
         var all = await users.Users.OrderByDescending(u => u.IsActive).ThenBy(u => u.DisplayName).ToListAsync(ct);
         var result = new List<UserDto>(all.Count);
-        foreach (var user in all) result.Add(await users.ToDtoAsync(user));
+        foreach (var user in all) result.Add(await users.ToDtoAsync(user, configuration.GetValue("Security:RequireTwoFactorForManagers", true)));
         return result;
     }
 
@@ -47,7 +49,7 @@ public sealed class StaffService(
         await SendInviteAsync(user);
         audit.Add("staff_invited", actorId, context, new { staffId = user.Id, role = request.Role });
         await db.SaveChangesAsync(ct);
-        return await users.ToDtoAsync(user);
+        return await users.ToDtoAsync(user, configuration.GetValue("Security:RequireTwoFactorForManagers", true));
     }
 
     public async Task<UserDto> UpdateAsync(Guid actorId, Guid staffId, UpdateStaffRequest request, RequestContext context, CancellationToken ct)
@@ -85,7 +87,7 @@ public sealed class StaffService(
 
         audit.Add("staff_updated", actorId, context, new { staffId, role = request.Role, request.IsActive });
         await db.SaveChangesAsync(ct);
-        return await users.ToDtoAsync(user);
+        return await users.ToDtoAsync(user, configuration.GetValue("Security:RequireTwoFactorForManagers", true));
     }
 
     public async Task ResendInviteAsync(Guid actorId, Guid staffId, RequestContext context, CancellationToken ct)

@@ -1,4 +1,4 @@
-﻿# Torvello Backend
+# Torvello Backend
 
 Cloud API for Torvello: staff accounts with email sign-in now; owner dashboard,
 till sync and SMS later. The desktop till lives in the separate `torvello` repo.
@@ -49,12 +49,13 @@ dotnet test
 ## Auth design
 | Endpoint | Who | Notes |
 |---|---|---|
-| `POST /api/auth/login` | anyone | email + password → access token (15 min) + refresh token (14 days) |
+| `POST /api/auth/login` | anyone | email + password → AuthResponse + HttpOnly refresh cookie, or a 2FA challenge |
+| `POST /api/auth/login/2fa` | anyone with a challenge | authenticator or recovery code → AuthResponse + cookie |
 | `POST /api/auth/refresh` | anyone | rotates the refresh token; replaying an old one ends the whole session family |
-| `POST /api/auth/logout` | anyone | revokes the refresh token |
+| `POST /api/auth/logout` | anyone | revokes the cookie token family and clears the cookie |
 | `POST /api/auth/forgot-password` | anyone | always 202; emails a reset link if the account exists |
-| `POST /api/auth/reset-password` | anyone | token from email; signs out every device |
-| `POST /api/auth/accept-invite` | anyone | token from invite email; confirms email and sets the password |
+| `POST /api/auth/reset-password` | anyone | token from email; signs out other devices; AuthResponse + cookie |
+| `POST /api/auth/accept-invite` | anyone | confirms email and sets password; AuthResponse + cookie |
 | `POST /api/auth/change-password` | signed in | returns fresh tokens; other devices are signed out |
 | `GET /api/auth/me` | signed in | |
 | `GET/POST /api/staff`, `PUT /api/staff/{id}`, `POST /api/staff/{id}/resend-invite` | Owner | invite, change role, disable |
@@ -64,8 +65,26 @@ Security rules:
 - 5 wrong passwords lock the account for 5 minutes; auth endpoints are rate-limited per IP.
 - Unknown email and wrong password return the same error.
 - Disabling a user, changing their role or password rotates their security stamp: existing access tokens stop working immediately.
-- The bootstrap owner must change the temporary password; until then only `/me` and `/change-password` work.
+- The bootstrap owner must change the temporary password; until then only account setup and session endpoints work. Owners and managers must also enroll in 2FA by default.
 - Refresh tokens and reset/invite tokens are never stored in plain text. Sign-ins, failures, invites and changes are written to `AuditEvents`.
+
+## Website sign-in
+
+Use `credentials: 'include'` on token-issuing requests. AuthResponse contains
+`accessToken`, `accessTokenExpiresAt` and `user`; keep access tokens in memory.
+Never store refresh tokens in localStorage or send them in JSON.
+Refresh and logout are bodyless POSTs with `X-Torvello-Client: web`.
+The browser sends and rotates the HttpOnly `torvello_rt` cookie automatically.
+
+When login returns `twoFactorRequired` and `twoFactorToken`, submit that token and
+an authenticator `code` (or `recoveryCode`) to `POST /api/auth/login/2fa`.
+Enroll with `GET /api/auth/2fa` and `POST /api/auth/2fa/setup` then `/2fa/enable`.
+Recovery codes are shown once; keep them offline. Enabling/disabling 2FA or
+replacing codes signs out sessions, so sign in again afterward.
+Owners/managers with `user.twoFactorSetupRequired` must enroll before normal API use.
+
+See [the security guide and API contract](docs/SECURITY.md) for the complete flow,
+deployment configuration and production checklist.
 
 ## Till sync
 | Endpoint | Who | Notes |
@@ -109,7 +128,7 @@ Every uploaded event is stored raw in `SyncEvents`; `order_completed` is also pr
 types (shifts, cash movements, later stock and attendance) are kept for future reports.
 
 Before production: set `Email:Provider=Smtp` with SMTP settings, set `AppLinks:WebBaseUrl`
-to the web app URL, set `Cors:AllowedOrigins`, and persist ASP.NET Data Protection keys
+to the web app URL, set `Cors:Origins` and `DataProtection:KeysPath`, and back up Data Protection keys
 (invite/reset links otherwise stop working after a restart).
 
 ## Branches
