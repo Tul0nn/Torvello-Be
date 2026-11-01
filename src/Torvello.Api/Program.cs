@@ -71,12 +71,11 @@ builder.Services.AddRateLimiter(options =>
         _ => new FixedWindowRateLimiterOptions { PermitLimit = permitPerMinute, Window = TimeSpan.FromMinutes(1) }));
 });
 
-var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
-builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
-    policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()));
+builder.ConfigureSecurity();
 
 var app = builder.Build();
 
+app.UseSecurityHeaders();
 app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())
 {
@@ -93,6 +92,7 @@ app.UseCors();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UsePasswordChangeGate();
+app.UseTwoFactorGate();
 app.UseAuthorization();
 
 app.MapControllers();

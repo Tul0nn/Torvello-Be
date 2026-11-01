@@ -16,8 +16,13 @@ internal static class UserMapping
         return roles.FirstOrDefault(Roles.IsValid) ?? Roles.Cashier;
     }
 
-    public static async Task<UserDto> ToDtoAsync(this UserManager<AppUser> users, AppUser user) =>
-        new(user.Id, user.Email ?? "", user.DisplayName, await users.RoleOfAsync(user), user.IsActive, user.EmailConfirmed, user.MustChangePassword);
+    public static async Task<UserDto> ToDtoAsync(this UserManager<AppUser> users, AppUser user, bool requireTwoFactor = true)
+    {
+        var role = await users.RoleOfAsync(user);
+        return new(user.Id, user.Email ?? "", user.DisplayName, role, user.IsActive, user.EmailConfirmed,
+            user.MustChangePassword, user.TwoFactorEnabled,
+            requireTwoFactor && !user.TwoFactorEnabled && (role is Roles.Owner or Roles.Manager));
+    }
 
     /// <summary>Identity tokens contain characters that break in URLs, so links carry them base64url-encoded.</summary>
     public static string EncodeToken(string token) => WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
