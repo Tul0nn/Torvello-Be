@@ -135,3 +135,22 @@ to the web app URL, set `Cors:Origins` and `DataProtection:KeysPath`, and back u
 - `main` – released code
 - `dev` – integration branch; merges to `main` for releases
 - `feature/*` – one branch per feature, merged into `dev`
+
+## Public menu
+
+`menu_published` device events contain a complete menu snapshot. The API keeps one
+`PublishedMenus` row for the current single cafe; strictly newer `publishedAt`
+(milliseconds) replaces it atomically. Equal/older snapshots are accepted without
+changing the projection, and event retries remain idempotent. Empty categories
+must be omitted; every item needs a size. Names are limited to 80 characters,
+prices to 0�10,000,000 paisa, and menus to 50 categories and 500 items.
+
+`GET /api/public/menu` requires no authentication and returns
+`{ cafeName, updatedAt, categories }`, or 404 with title `Menu not published yet`.
+It sends `Cache-Control: public, max-age=60` and an ETag; `If-None-Match` can return
+304. It has a separate limit of 60 requests/minute per IP. Set
+`PublicSite:Origins` to an array of explicit HTTPS cafe website origins
+(Development defaults to `http://localhost:5175`). Its named `PublicMenu` CORS
+policy allows GET without credentials and exposes ETag. Set `PublicSite:CafeName`
+to override the default cafe name `Torvello`. The public DTO includes only menu
+categories, items, sizes and add-ons, never recipes, costs, stock, staff or sales.

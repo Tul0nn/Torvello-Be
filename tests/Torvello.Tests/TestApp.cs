@@ -37,6 +37,8 @@ public sealed class TestApp : WebApplicationFactory<Program>
         builder.UseSetting("Bootstrap:OwnerPassword", OwnerBootstrapPassword);
         builder.UseSetting("RateLimiting:AuthPermitPerMinute", "1000");
         builder.UseSetting("AppLinks:WebBaseUrl", "https://app.test");
+        builder.UseSetting("PublicSite:Origins:0", "https://cafe.test");
+        builder.UseSetting("Cors:Origins:0", "https://owner.test");
 
         builder.ConfigureServices(services =>
         {

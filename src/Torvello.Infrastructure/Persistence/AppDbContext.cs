@@ -9,6 +9,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 {
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
+    public DbSet<PublishedMenu> PublishedMenus => Set<PublishedMenu>();
     public DbSet<Device> Devices => Set<Device>();
     public DbSet<SyncEvent> SyncEvents => Set<SyncEvent>();
     public DbSet<SyncedOrder> SyncedOrders => Set<SyncedOrder>();
@@ -51,6 +52,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             audit.Property(a => a.IpAddress).HasMaxLength(45);
             audit.HasIndex(a => a.OccurredAt);
             audit.HasIndex(a => a.UserId);
+        });
+
+        builder.Entity<PublishedMenu>(menu =>
+        {
+            menu.ToTable("PublishedMenus");
+            menu.HasKey(m => m.CafeId);
+            menu.Property(m => m.CafeId).HasMaxLength(60);
+            menu.Property(m => m.Payload).IsRequired();
         });
 
         builder.Entity<Device>(device =>

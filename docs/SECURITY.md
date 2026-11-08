@@ -104,3 +104,22 @@ database administrator or browser script remains a serious trust boundary.
 
 ## Errors
 ProblemDetails `{ title }` as today; the website shows `title`.
+
+## Public menu endpoint
+
+`GET /api/public/menu` is intentionally anonymous, including during account setup.
+Only this endpoint uses the named `PublicMenu` CORS policy: GET from the explicit
+`PublicSite:Origins` array, no credentials, with ETag exposed. Production origins
+must use HTTPS; Development permits HTTP (`http://localhost:5175` by default).
+The separate public-menu rate limit is 60 requests per minute per remote IP.
+Responses are publicly cacheable for 60 seconds and support ETag/304. No published
+snapshot returns 404 with title `Menu not published yet`.
+
+Only device-key-authenticated `menu_published` events can publish. Snapshots are
+validated before storing their projection; atomic timestamp comparison prevents
+older or equal snapshots replacing newer content. Explicit DTO whitelists at
+projection and response boundaries exclude recipes, ingredients, costs, stock,
+staff and sales, even if extra fields arrive in a raw sync event. Raw events remain
+private. Public menu names are at most 80 characters, prices are integer paisa in
+0�10,000,000, each item has at least one size, and a snapshot has at most 50
+categories and 500 items. Configure `PublicSite:CafeName` for the public cafe name.
