@@ -26,13 +26,16 @@ public sealed class SyncService(AppDbContext db, Microsoft.AspNetCore.DataProtec
             var hash = TokenService.Hash(raw);
             try
             {
-                if (raw.Length > MaxPayloadChars) throw new SyncRejection("Payload is too large");
+                if (raw.Length > (evt.EventType == "menu_published" ? 2 * 1024 * 1024 : MaxPayloadChars)) throw new SyncRejection("Payload is too large");
                 if (await IsDuplicateAsync(evt.EventId, deviceId, hash, ct))
                 {
                     accepted.Add(evt.EventId);
                     continue;
                 }
 
+                // Keep the atomic menu projection and raw event in one transaction.
+                await using var transaction = evt.EventType == "menu_published"
+                    ? await db.Database.BeginTransactionAsync(ct) : null;
                 db.SyncEvents.Add(new SyncEvent
                 {
                     EventId = evt.EventId,
@@ -47,6 +50,9 @@ public sealed class SyncService(AppDbContext db, Microsoft.AspNetCore.DataProtec
                 // raw events until their reports exist; they can be projected from history then.
                 switch (evt.EventType)
                 {
+                    case "menu_published":
+                        await MenuProjection.ApplyAsync(db, evt.Payload, clock.GetUtcNow(), ct);
+                        break;
                     case "order_completed":
                         var order = OrderProjection.Parse(evt.Payload, deviceId, evt.EventId, evt.CreatedAt);
                         db.SyncedOrders.Add(order);
@@ -73,6 +79,7 @@ public sealed class SyncService(AppDbContext db, Microsoft.AspNetCore.DataProtec
                         break;
                 }
                 await db.SaveChangesAsync(ct);
+                if (transaction is not null) await transaction.CommitAsync(ct);
                 accepted.Add(evt.EventId);
             }
             catch (SyncRejection rejection)

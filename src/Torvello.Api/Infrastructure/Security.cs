@@ -16,10 +16,11 @@ public static class Security
         var config = builder.Configuration;
         var development = builder.Environment.IsDevelopment();
         var origins = config.GetSection("Cors:Origins").Get<string[]>() ?? [];
-        if (origins.Any(origin => origin.Contains('*') || !Uri.TryCreate(origin, UriKind.Absolute, out var uri) ||
+        var publicOrigins = config.GetSection("PublicSite:Origins").Get<string[]>() ?? [];
+        if (origins.Concat(publicOrigins).Any(origin => origin.Contains('*') || !Uri.TryCreate(origin, UriKind.Absolute, out var uri) ||
             uri.AbsolutePath != "/" || !string.IsNullOrEmpty(uri.Query) || !string.IsNullOrEmpty(uri.Fragment) ||
             !string.IsNullOrEmpty(uri.UserInfo) || (uri.Scheme != "https" && (!development || uri.Scheme != "http"))))
-            throw new InvalidOperationException("Cors:Origins must contain explicit HTTPS origins (HTTP is allowed in Development)");
+            throw new InvalidOperationException("Cors:Origins and PublicSite:Origins must contain explicit HTTPS origins (HTTP is allowed in Development)");
         if (!development)
         {
             if (Encoding.UTF8.GetByteCount(config["Jwt:SigningKey"] ?? "") < 32)
@@ -40,8 +41,12 @@ public static class Security
         var thumbprint = config["DataProtection:CertificateThumbprint"];
         if (!string.IsNullOrWhiteSpace(thumbprint)) protection.ProtectKeysWithCertificate(thumbprint);
         else if (OperatingSystem.IsWindows()) protection.ProtectKeysWithDpapi();
-        builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
-            policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
+        builder.Services.AddCors(options =>
+        {
+            options.AddDefaultPolicy(policy => policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod().AllowCredentials());
+            options.AddPolicy("PublicMenu", policy => policy.WithOrigins(publicOrigins).WithMethods("GET")
+                .WithHeaders("If-None-Match").WithExposedHeaders("ETag", "Cache-Control"));
+        });
     }
 
     public static IApplicationBuilder UseSecurityHeaders(this IApplicationBuilder app) =>
@@ -70,7 +75,8 @@ public static class Security
                 (context.User.IsInRole(Roles.Owner) || context.User.IsInRole(Roles.Manager)))
             {
                 var path = context.Request.Path.Value ?? "";
-                var allowed = path.Equals("/api/auth/me", StringComparison.OrdinalIgnoreCase) ||
+                var allowed = (HttpMethods.IsGet(context.Request.Method) && path.Equals("/api/public/menu", StringComparison.OrdinalIgnoreCase)) ||
+                    path.Equals("/api/auth/me", StringComparison.OrdinalIgnoreCase) ||
                     path.Equals("/api/auth/refresh", StringComparison.OrdinalIgnoreCase) ||
                     path.Equals("/api/auth/logout", StringComparison.OrdinalIgnoreCase) ||
                     path.Equals("/api/auth/change-password", StringComparison.OrdinalIgnoreCase) ||
