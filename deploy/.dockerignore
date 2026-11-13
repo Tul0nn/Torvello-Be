@@ -1,0 +1,6 @@
+**
+!Dockerfile.api
+!build/
+!build/api/
+!build/api/**
+

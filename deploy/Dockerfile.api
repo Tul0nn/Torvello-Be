@@ -1,0 +1,12 @@
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
+WORKDIR /app
+ENV ASPNETCORE_ENVIRONMENT=Production ASPNETCORE_HTTP_PORTS=8080
+COPY build/api/ ./
+USER root
+RUN mkdir -p /data/keys && chown -R app:app /data /app
+USER app
+EXPOSE 8080
+# The runtime image has no HTTP probe tool; external deployment probes /health.
+HEALTHCHECK NONE
+ENTRYPOINT ["dotnet", "Torvello.Api.dll"]
+

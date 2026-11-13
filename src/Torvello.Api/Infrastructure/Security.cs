@@ -75,7 +75,8 @@ public static class Security
                 (context.User.IsInRole(Roles.Owner) || context.User.IsInRole(Roles.Manager)))
             {
                 var path = context.Request.Path.Value ?? "";
-                var allowed = (HttpMethods.IsGet(context.Request.Method) && path.Equals("/api/public/menu", StringComparison.OrdinalIgnoreCase)) ||
+                var allowed = (HttpMethods.IsGet(context.Request.Method) && path.Equals("/health", StringComparison.OrdinalIgnoreCase)) ||
+                    (HttpMethods.IsGet(context.Request.Method) && path.Equals("/api/public/menu", StringComparison.OrdinalIgnoreCase)) ||
                     path.Equals("/api/auth/me", StringComparison.OrdinalIgnoreCase) ||
                     path.Equals("/api/auth/refresh", StringComparison.OrdinalIgnoreCase) ||
                     path.Equals("/api/auth/logout", StringComparison.OrdinalIgnoreCase) ||

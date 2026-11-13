@@ -1,0 +1,44 @@
+{
+    email {$ACME_EMAIL}
+}
+(common) {
+    encode zstd gzip
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy no-referrer
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        -Server
+    }
+}
+(static) {
+    @assets path /assets/*
+    header @assets Cache-Control "public, max-age=31536000, immutable"
+    # Applied after try_files rewrites, including SPA deep links.
+    @index path /index.html /
+    header @index Cache-Control "no-cache"
+    file_server
+}
+www.torvellobd.com {
+    import common
+    redir https://torvellobd.com{uri} permanent
+}
+torvellobd.com {
+    import common
+    root * /srv/torvello/sites/cafe
+    header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.torvellobd.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+    import static
+}
+app.torvellobd.com {
+    import common
+    root * /srv/torvello/sites/app
+    # Compatible with the owner's CSP meta; header also protects frame ancestry.
+    header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.torvellobd.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+    try_files {path} /index.html
+    import static
+}
+api.torvellobd.com {
+    import common
+    reverse_proxy api:8080
+}

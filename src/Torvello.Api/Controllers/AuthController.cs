@@ -14,8 +14,11 @@ public sealed class AuthController(IAuthService auth, IWebHostEnvironment enviro
     private const string CookieName = "torvello_rt";
     private CookieOptions CookieOptions(DateTimeOffset? expires = null) => new()
     {
-        HttpOnly = true, SameSite = SameSiteMode.Strict, Path = "/api/auth",
-        Secure = !environment.IsDevelopment() || Request.IsHttps, Expires = expires,
+        HttpOnly = true,
+        SameSite = SameSiteMode.Strict,
+        Path = "/api/auth",
+        Secure = !environment.IsDevelopment() || Request.IsHttps,
+        Expires = expires,
     };
 
     private AuthResponse SetCookie(AuthResponse response)
