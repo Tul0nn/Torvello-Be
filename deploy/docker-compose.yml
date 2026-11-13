@@ -1,0 +1,72 @@
+name: torvello
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    mem_limit: 512m
+    shm_size: 128m
+    logging: *logging
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+      POSTGRES_DB: postgres
+      TORVELLO_APP_PASSWORD: ${TORVELLO_APP_PASSWORD:?required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init/01-app-user.sh:/docker-entrypoint-initdb.d/01-app-user.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d torvello"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  api:
+    image: torvello-api:local
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    restart: unless-stopped
+    mem_limit: 512m
+    logging: *logging
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      Cors__Origins__0: https://app.torvellobd.com
+      PublicSite__Origins__0: https://torvellobd.com
+      PublicSite__Origins__1: https://www.torvellobd.com
+      AppLinks__WebBaseUrl: https://app.torvellobd.com
+      DataProtection__KeysPath: /data/keys
+      ForwardedHeaders__KnownNetworks__0: 172.30.80.0/24
+    volumes:
+      - api_keys:/data/keys
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    mem_limit: 128m
+    logging: *logging
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:?required}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - /srv/torvello/sites:/srv/torvello/sites:ro
+      - caddy_data:/data
+      - caddy_config:/config
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.80.0/24
+volumes:
+  postgres_data:
+  api_keys:
+  caddy_data:
+  caddy_config:

@@ -63,8 +63,15 @@ public sealed class PeopleTests : IDisposable
         var result = await PushAsync(till,
             Ev("customer_saved", new
             {
-                id = tillCustomerId.ToString(), phone = "01712345678", name = "Nadia", birthdayMonth = 3, birthdayDay = 2,
-                notes = "Oat milk", marketingConsent = true, updatedAt = "2026-10-25T04:00:00Z", updatedByName = "Karim",
+                id = tillCustomerId.ToString(),
+                phone = "01712345678",
+                name = "Nadia",
+                birthdayMonth = 3,
+                birthdayDay = 2,
+                notes = "Oat milk",
+                marketingConsent = true,
+                updatedAt = "2026-10-25T04:00:00Z",
+                updatedByName = "Karim",
             }),
             Sale("TV-20261025-0001", 28000, "01712345678", "2026-10-25T05:00:00Z"),
             Sale("TV-20261027-0001", 32000, "+8801712345678", "2026-10-27T05:00:00Z"),
@@ -133,10 +140,22 @@ public sealed class PeopleTests : IDisposable
         var result = await PushAsync(till,
             Ev("employee_saved", new
             {
-                id = staffId.ToString(), name = "Rahim", email = "Cash@torvello.test", role = "cashier", active = true, position = "Barista",
-                phone = "01712345678", joinDate = "2026-01-15", dateOfBirth = "2000-05-02", address = "Road 5, Dhanmondi", nationalId = "1234567890",
-                emergencyContactName = "Mother", emergencyContactPhone = "01812345678", notes = "Very reliable",
-                updatedAt = "2026-10-20T00:00:00Z", updatedByName = "Karim",
+                id = staffId.ToString(),
+                name = "Rahim",
+                email = "Cash@torvello.test",
+                role = "cashier",
+                active = true,
+                position = "Barista",
+                phone = "01712345678",
+                joinDate = "2026-01-15",
+                dateOfBirth = "2000-05-02",
+                address = "Road 5, Dhanmondi",
+                nationalId = "1234567890",
+                emergencyContactName = "Mother",
+                emergencyContactPhone = "01812345678",
+                notes = "Very reliable",
+                updatedAt = "2026-10-20T00:00:00Z",
+                updatedByName = "Karim",
             }),
             Ev("employee_saved", new { id = Guid.NewGuid().ToString(), name = "X", email = "x@torvello.test", role = "cashier", nationalId = "123" }),
             Ev("attendance_clock_in", new { id = Guid.NewGuid().ToString(), employeeEmail = "cash@torvello.test", employeeName = "Rahim", at = DateTimeOffset.UtcNow.AddHours(-1) }));
@@ -182,7 +201,12 @@ public sealed class PeopleTests : IDisposable
         // A late till upload of an older edit keeps the owner's HR details but still updates the account fields.
         await PushAsync(till, Ev("employee_saved", new
         {
-            id = staffId.ToString(), name = "Rahim Uddin", email = "cash@torvello.test", role = "manager", position = "Barista", updatedAt = "2026-10-21T00:00:00Z",
+            id = staffId.ToString(),
+            name = "Rahim Uddin",
+            email = "cash@torvello.test",
+            role = "manager",
+            position = "Barista",
+            updatedAt = "2026-10-21T00:00:00Z",
         }));
         var after = (await owner.GetFromJsonAsync<EmployeeProfileDto>($"/api/employees/{staffId}"))!;
         Assert.Equal(("Rahim Uddin", "Manager", "Senior barista", "Owner"), (after.Name, after.Role, after.Position, after.UpdatedByName));

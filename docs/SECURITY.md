@@ -58,6 +58,32 @@ database administrator or browser script remains a serious trust boundary.
 - Configure SMTP and AppLinks:WebBaseUrl; remove bootstrap secrets after provisioning.
 - Run build, tests, vulnerability audit and dotnet format before release.
 
+## Production deployment on the droplet
+
+See [the deployment runbook](../deploy/README.md). Caddy terminates HTTPS with
+DNS-only Cloudflare records; only Caddy publishes host ports. PostgreSQL uses
+`torvello_app`, a non-superuser database owner with no CREATEDB or CREATEROLE.
+Ownership permits startup migrations. The administrator password is for operations.
+
+Keep `/srv/torvello/app/.env` mode 600 and out of Git, containing random JWT and DB
+secrets and SMTP credentials. Remove the bootstrap password after the first password
+change. Release snapshots may contain older secrets; protect and retire them too.
+
+Forwarded headers run before redirects, rate limits and authentication. They are
+disabled without configured `ForwardedHeaders:KnownProxies` IPs or `KnownNetworks`
+CIDRs. Defaults are cleared, invalid entries fail startup and only one hop is read.
+Compose trusts `172.30.80.0/24`; every container on that network is in the trust
+boundary. Do not attach unrelated containers or publish API directly. Changing to
+Cloudflare proxying or adding another proxy requires a fresh trust review.
+
+The `api_keys` named volume persists Data Protection keys. On this Linux deployment
+they are **unencrypted at rest**, an accepted temporary exception to the certificate
+recommendation above. Restrict host and Docker access, and encrypt off-host backups
+of both keys and database. Follow-up: configure certificate-backed key encryption,
+protect its private key separately, and test key rotation and full disaster recovery.
+`/health` is anonymous and not rate limited; it performs only a cheap database check
+and exposes no version, configuration or failure details.
+
 ## API contract
 
 # Security contract between the API and the owner website (both tasks follow this exactly)

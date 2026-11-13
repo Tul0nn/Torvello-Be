@@ -3,6 +3,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
@@ -24,7 +25,8 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<AppExceptionHandler>();
 builder.Services.AddOpenApi();
-builder.Services.AddHealthChecks();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    ProxyForwarding.Configure(options, configuration));
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -78,6 +80,11 @@ builder.ConfigureSecurity();
 
 var app = builder.Build();
 
+// Resolve and validate even when no requests have arrived yet.
+var forwarding = app.Services.GetRequiredService<IOptions<ForwardedHeadersOptions>>().Value;
+if (forwarding.ForwardedHeaders != Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.None)
+    app.UseForwardedHeaders();
+
 app.UseSecurityHeaders();
 app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())
@@ -99,7 +106,18 @@ app.UseTwoFactorGate();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapHealthChecks("/health").AllowAnonymous();
+app.MapGet("/health", async (AppDbContext db, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        await db.Database.ExecuteSqlRawAsync("SELECT 1", cancellationToken);
+        return Results.Json(new { status = "ok" });
+    }
+    catch (Exception) when (!cancellationToken.IsCancellationRequested)
+    {
+        return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+    }
+}).AllowAnonymous().DisableRateLimiting().WithMetadata(new AllowWhilePasswordChangeRequiredAttribute());
 
 await app.Services.InitializeDatabaseAsync(configuration);
 await app.RunAsync();

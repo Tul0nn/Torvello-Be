@@ -5,6 +5,7 @@
 
 # dotenv files
 .env
+deploy/build/
 
 # User-specific files
 *.rsuser
